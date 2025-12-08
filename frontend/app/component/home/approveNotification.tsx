@@ -1,108 +1,55 @@
 "use client";
 
-import { useState } from "react";
-import { useUserStore } from "../../../lib/store/userStore";
-import { postWithAuth } from "../../utils/postWithAuth";
-import { API_BASE } from "../../utils/apiBase";
-import { useReceiveNotification } from "../../hook/useRecieveNotification";
-import { acceptCall } from "../../utils/startChatOffer";
-import { handleRemoteAnswer, applyRemoteIce } from "../../utils/callSession";
+import { useUserStore } from "../../types/userStore";
+import { useNotificationStore } from "../../types/notificationStore";
+import { useCallOfferStore } from "../../types/callOfferStore";
+import { acceptFriendRequest, acceptCallRequest, declineCallRequest } from "../../services/signaling/globalActions";
+import IncomingCallToast from "./incomingCallToast";
+import { useMemo } from "react";
 
 export default function NotificationListener({ userID }: { userID: number }) {
-  const [notifications, setNotifications] = useState<Record<number, string>>({});
   const { user } = useUserStore();
-  const token = user.token;
-  const peerByUser = new Map<number, RTCPeerConnection>();
+  const friendRequests = useNotificationStore((s) => s.friendRequests);
+  const offersMap = useCallOfferStore((s) => s.offers);
+  const callOffers = useMemo(() => Array.from(offersMap.keys()), [offersMap]);
 
-  useReceiveNotification(
-    userID,
-    token,
-    (msg) => {
-      if (msg.type === "friend_request") {
-        const reqUserID = Number(msg.requestUserID);
-
-        // 🔹 既存の通知オブジェクトに追加
-        setNotifications((prev) => ({
-          ...prev,
-          [reqUserID]: msg.message,
-        }));
-
-        alert(`🔔 ${msg.message}`);
-      }
-    },
-    {
-      // オファー受信: 承諾でアンサーを返す
-      onOffer: async (ws, { from, sdp }) => {
-        try {
-          const accept = window.confirm(`📞 User ${from} からの通話リクエスト。受けますか？`);
-          if (!accept) return;
-          // 受信用 PeerConnection を作成し、アンサー送信までをユーティリティに委譲
-          const pc = await acceptCall(ws, from, sdp);
-          peerByUser.set(from, pc);
-        } catch (e) {
-          console.error("onOffer handling failed:", e);
-          alert("通話接続中にエラーが発生しました。");
-        }
-      },
-      // 呼び出し側: アンサーを適用
-      onAnswer: async (_ws, { from, sdp }) => {
-        try {
-          await handleRemoteAnswer(from, sdp);
-        } catch (e) {
-          console.error("apply remote answer failed:", e);
-        }
-      },
-      // 相手のICE候補を適用（統一関数へ委譲）
-      onIce: async (_ws, { from, candidate }) => {
-        try {
-          // Mapがある場合はMapを、なければ発信側（単一セッション）に適用
-          const pc = peerByUser.get(from);
-          await applyRemoteIce(from, candidate, pc ? peerByUser : undefined);
-        } catch (e) {
-          console.error("addIceCandidate failed:", e);
-        }
-      },
-    }
-  );
-
-  const ApproveRequest = async (requestUserID,userID) =>{
-    try {
-      const data = await postWithAuth(`${API_BASE}/api/friend/request/approve`,{
-        requestUserID: Number(requestUserID),
-        userID: Number(userID),
-      })
-
-      console.log("フレンド承認成功:", data);
-      alert("フレンド申請を承認しました。");
-      
-      } catch (error) {
-        console.log("Approving friend request from user ID:", requestUserID);
-        console.log("Current user ID:", userID);
-        console.error("Error during friend request:", error);
-        alert("フレンド申請中にエラーが発生しました。");
-      }
-  }
+  const ApproveRequest = async (requestUserID: number) => {
+    await acceptFriendRequest(Number(requestUserID), Number(user?.id ?? 0));
+    alert("フレンド申請を承認しました。");
+  };
 
   return (
-    <div className="fixed bottom-4 right-4 space-y-2">
-      {/* 🔹 Object.entries() で [key, value] に分けてループ */}
-      {Object.entries(notifications).map(([reqID, text]) => (
-        <div
-          key={reqID}
-          className="bg-blue-500 text-white px-4 py-2 rounded shadow-md animate-bounce"
-        >
-          <p>
-            <strong>From User ID:</strong> {reqID}
-          </p>
-          <button
-            type="submit"
-            onClick={() => ApproveRequest(reqID, userID)}
+    <>
+      {/* 友達承認トースト */}
+      <div className="fixed bottom-4 right-4 space-y-2">
+        {Object.entries(friendRequests).map(([reqID, notif]) => (
+          <div
+            key={reqID}
+            className="bg-blue-500 text-white px-4 py-2 rounded shadow-md animate-bounce"
           >
-            リクエスト承認
-          </button>
-          <p>{text}</p>
-        </div>
-      ))}
-    </div>
+            <p>
+              <strong>From User ID:</strong> {reqID}
+            </p>
+
+            <p>{notif.message}</p>
+
+            <button
+              type="button"
+              onClick={() => ApproveRequest(Number(reqID))}
+              className="mt-2 bg-white text-blue-600 px-2 py-1 rounded"
+            >
+              リクエスト承認
+            </button>
+          </div>
+        ))}
+      </div>
+
+      {/* 通話リクエストトースト */}
+      <IncomingCallToast
+        offers={callOffers}
+        onAccept={acceptCallRequest}
+        onDecline={declineCallRequest}
+      />
+    </>
   );
 }

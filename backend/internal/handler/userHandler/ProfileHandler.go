@@ -35,7 +35,6 @@ func (h *GetMeHandler) GetMeHandler(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not retrieve user getMe"})
 		return
 	}
-	fmt.Println("GetMeHandler: retrieved user =", user)
 
 	c.JSON(http.StatusOK, gin.H{
 		"id":    user.ID,

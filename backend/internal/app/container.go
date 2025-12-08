@@ -2,19 +2,19 @@ package app
 
 import (
 	"akichat/backend/internal/db"
-	ws "akichat/backend/internal/handler/webSocket"
-	"akichat/backend/internal/realtime"
+	ws "akichat/backend/internal/communication/websocket"
+	comm "akichat/backend/internal/communication"
 	"akichat/backend/internal/repository"
 	authsvc "akichat/backend/internal/service/auth"
 	friendssvc "akichat/backend/internal/service/friends"
-	signaling "akichat/backend/internal/service/signaling"
+	signaling "akichat/backend/internal/service/communication"
 )
 
 type Container struct {
 	// Infra
 	DB  interface{}
 	Hub *ws.Hub
-	RT  realtime.Gateway
+	RT  comm.Gateway
 
 	// Repository
 	UserRepo          *repository.UserRepository

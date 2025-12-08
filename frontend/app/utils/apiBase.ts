@@ -4,6 +4,3 @@ export const API_BASE: string =
 
 export const WS_BASE =
   API_BASE.replace("https://", "wss://").replace("http://", "ws://");
-
-
-

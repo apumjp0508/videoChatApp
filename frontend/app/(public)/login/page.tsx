@@ -1,8 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useUserStore } from "../../../lib/store/userStore";
-import { startWebSocket } from "../../utils/startWebSocket";
+import { useUserStore } from "../../types/userStore";
 import { API_BASE } from "../../utils/apiBase";
 
 export default function Login() {
@@ -41,7 +40,7 @@ export default function Login() {
                     token: data.accessToken,
                 });
 
-                startWebSocket(data.userID,data.accessToken);
+                // WebSocketはRootProviderのフックで自動接続されます
                                 
             } else {
                 console.log(data);

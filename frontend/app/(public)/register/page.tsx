@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useUserStore } from "../../../lib/store/userStore";
+import { useUserStore } from "../../types/userStore";
 import { API_BASE } from "../../utils/apiBase";
 
 export default function Register() {

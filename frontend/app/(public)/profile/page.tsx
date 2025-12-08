@@ -1,5 +1,5 @@
 "use client"
-import { useUserStore } from "../../../lib/store/userStore";
+import { useUserStore } from "../../types/userStore";
 
 export default function GetMe() {
   const { user } = useUserStore();

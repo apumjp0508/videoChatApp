@@ -1,4 +1,4 @@
-import { fetchConnectedUsers } from "../../utils/fetchConnectedUsers";
+import { fetchConnectedUsers } from "../../services/fetch/fetchConnectedUsers";
 import { useEffect, useState } from "react";
 
 export default function ConnectedUsers() {

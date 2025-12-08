@@ -2,21 +2,29 @@
 
 import { useEffect } from "react";
 import { useState } from "react";
-import { fetchFriends } from "../../utils/fetchFriends";
-import { fetchConnectedUsers } from "../../utils/fetchConnectedUsers";
+import { fetchFriends } from "../../services/fetch/fetchFriends";
+import { fetchConnectedUsers } from "../../services/fetch/fetchConnectedUsers";
 import { useRouter } from "next/navigation";
-import { useUserStore } from "../../../lib/store/userStore";
+import { useUserStore } from "../../types/userStore";
 import Notification from "../../component/home/approveNotification";
-import { startWebSocket } from "../../utils/startWebSocket";
-import { startOutgoingCall } from "../../utils/callSession";
+import { startOutgoingCall, subscribeConnectionState } from "../../services/videoChat/callSession";
+import { ConnState } from "../../types/callSession";
+import { useWebSocketStore } from "../../types/websocketStore";
 
 export default function ChatStartButton() {
     type Friend = { ID: number; username: string; isOnline?: boolean };
     const [ friends, setFriends ] = useState<Array<Friend>>([]);
     const [ connectedUsers, setConnectedUsers ] = useState<number[]>([]);
     const { user } = useUserStore();
+    const { ws } = useWebSocketStore();
     const router = useRouter();
     useEffect(() => {
+        // 接続状態の監視: connected になったらチャット画面へ遷移
+        const unsubscribe = subscribeConnectionState((state) => {
+            if (state === ConnState.Connected) {
+                router.push("/chatRoom");
+            }
+        });
         const updateFriendsOnlineStatus = (connected: number[]) => {
             const onlineSet = new Set(connected);
             //prevで書くと非同期で常に最新の値が入れられるので強豪が存在しないというメリットがある
@@ -40,8 +48,11 @@ export default function ChatStartButton() {
         fetchData();
         loadConnectedUsers();
         const interval = setInterval(loadConnectedUsers, 5000);
-        return () => clearInterval(interval);
-    }, []);
+        return () => {
+            clearInterval(interval);
+            unsubscribe();
+        };
+    }, [router]);
 
     return (
         <main className="flex min-h-screen items-center justify-center bg-gradient-to-r from-blue-500 to-pink-400 text-white text-4xl font-bold">
@@ -71,7 +82,10 @@ export default function ChatStartButton() {
 							className={`${friend.isOnline ? "bg-pink-500 hover:bg-pink-600 text-white" : "bg-gray-300 text-gray-500 cursor-not-allowed"} text-sm font-bold py-1 px-3 rounded-full shadow transition`}
                             onClick={async () => {
                                 if (!user?.id || !friend.isOnline) return;
-                                const ws = await startWebSocket(Number(user.id), String(user.token ?? ""));
+                                if (!ws || ws.readyState !== WebSocket.OPEN) {
+                                    alert("WebSocketが未接続です。少し待ってから再試行してください。");
+                                    return;
+                                }
                                 await startOutgoingCall(ws, friend.ID);
                                 router.push("/loading");
                             }}

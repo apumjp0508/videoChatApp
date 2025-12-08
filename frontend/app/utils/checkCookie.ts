@@ -1,5 +1,5 @@
 import { fetchWithAuth } from "./fetchWithAuth";
-import { fetchMe } from "./fetchMe";
+import { fetchMe } from "../services/fetch/fetchMe";
 import { API_BASE } from "./apiBase";
 
 export async function checkCookie(): Promise<{ loggedIn: boolean; message: string; id: number; email: string; name: string }> {

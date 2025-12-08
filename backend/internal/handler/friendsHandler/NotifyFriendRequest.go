@@ -1,10 +1,14 @@
 package friendsHandler
 
 import (
-	websocket "akichat/backend/internal/handler/webSocket"
+	wsclient "akichat/backend/internal/communication/websocket"
 )
 
 func (h *FriendRequestHandler) NotifyFriendRequest(userID uint,FriendID uint) error {
-	message := "You received a friend request!"
-	return websocket.GlobalHub.NotifyUser(userID ,FriendID, message)
+	payload := map[string]interface{}{
+		"type":          "friend_request",
+		"message":       "You received a friend request!",
+		"requestUserID": userID,
+	}
+	return wsclient.GlobalHub.SendUserToUser(userID, FriendID, payload)
 }

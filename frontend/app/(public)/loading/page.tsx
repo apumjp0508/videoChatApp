@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { subscribeConnectionState, getConnectionState } from "../../utils/callSession";
+import { subscribeConnectionState, getConnectionState } from "../../services/videoChat/callSession";
 
 export default function Loading() {
     const router = useRouter();

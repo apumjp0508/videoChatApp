@@ -1,20 +1,20 @@
 package friends
 
 import (
-	"akichat/backend/internal/realtime"
+	comm "akichat/backend/internal/communication"
 	"akichat/backend/internal/repository"
 )
 
 type service struct {
 	friendShipRepo    *repository.FriendShipRepository
 	friendRequestRepo *repository.FriendRequestRepository
-	rt                realtime.Gateway
+	rt                comm.Gateway
 }
 
 func NewService(
 	fsRepo *repository.FriendShipRepository,
 	frRepo *repository.FriendRequestRepository,
-	rt realtime.Gateway,
+	rt comm.Gateway,
 ) Service {
 	return &service{
 		friendShipRepo:    fsRepo,
@@ -44,7 +44,11 @@ func (s *service) RequestFriend(fromUserID, toUserID uint) error {
 	}
 	// 既存の通知メッセージに合わせる
 	if s.rt != nil {
-		_ = s.rt.NotifyUser(fromUserID, toUserID, "You received a friend request!")
+		_ = s.rt.SendUserToUser(fromUserID, toUserID, map[string]interface{}{
+			"type":          "friend_request",
+			"message":       "You received a friend request!",
+			"requestUserID": fromUserID,
+		})
 	}
 	return nil
 }
