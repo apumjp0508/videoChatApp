@@ -3,6 +3,8 @@ import { ConnState } from "../../types/callSession";
 import { mapToConnState, setConnState, subscribeConnState, getConnState } from "../../utils/mapper/ConnStateMapper";
 import { getLocalStream } from "./getMedia";
 import { useChatRoomStore } from "../../types/chatRoomStore";
+import { useNetworkStore } from "../../types/networkStore";
+import { monitorNetworkQuality, stopMonitorNetworkQuality } from "./stats/monitorNetworkQuality";
 let currentPc: RTCPeerConnection | null = null;
 let currentPeerUserId: number | null = null;
 
@@ -29,18 +31,29 @@ export async function startOutgoingCall(
     notify();
     const connected = currentPc?.connectionState === "connected";
     useChatRoomStore.getState().setConnected(Boolean(connected));
+    if (!connected) {
+      stopMonitorNetworkQuality(toUserId);
+    }
   };
   // ChatRoom SSOT: 反映
+  useChatRoomStore.getState().setId(toUserId);
   useChatRoomStore.getState().setLocalStream(localStream);
   useChatRoomStore.getState().setPeerConnection(currentPc);
+  // NetworkState: ensure + setPC + streams + monitor
+  useNetworkStore.getState().ensure(toUserId);
+  useNetworkStore.getState().setPeerConnection(toUserId, currentPc);
+  useNetworkStore.getState().setStreams(toUserId, localStream, null);
+  monitorNetworkQuality(toUserId, currentPc);
   // 受信トラックでremoteStreamを構築
   currentPc.ontrack = (ev: RTCTrackEvent) => {
     const streams = ev.streams;
     if (streams && streams[0]) {
       useChatRoomStore.getState().setRemoteStream(streams[0]);
+      useNetworkStore.getState().setStreams(toUserId, localStream, streams[0]);
     } else if (ev.track) {
       const remote = new MediaStream([ev.track]);
       useChatRoomStore.getState().setRemoteStream(remote);
+      useNetworkStore.getState().setStreams(toUserId, localStream, remote);
     }
   };
   notify();

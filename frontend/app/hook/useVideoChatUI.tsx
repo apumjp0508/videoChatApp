@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef } from "react";
 import { useChatRoomStore } from "../types/chatRoomStore";
+import { useDynamicVideoQuality } from "./useDynamicVideoQuality";
 
 export function useVideoChatUI() {
   const session = useChatRoomStore((s) => s.session);
@@ -24,6 +25,12 @@ export function useVideoChatUI() {
     }
   }, [remoteStream]);
 
+  // 動的クオリティ制御（peerIdが未設定の場合は無効値で呼び、内部で無視される）
+  useDynamicVideoQuality({
+    peerId: Number(session.id ?? -1),
+    pc: session.peerConnection,
+  });
+
   const VideoChatView = useMemo(() => {
     if (!isConnected) return null;
     return (
@@ -32,14 +39,14 @@ export function useVideoChatUI() {
           ref={remoteRef}
           autoPlay
           playsInline
-          className="w-full h-full object-cover"
+          className="w-full h-full object-cover transform scale-x-[-1]"
         />
         <video
           ref={localRef}
           autoPlay
           playsInline
           muted
-          className="w-40 h-28 object-cover absolute bottom-4 right-4 rounded shadow-lg"
+          className="w-40 h-28 object-cover absolute bottom-4 right-4 rounded shadow-lg transform scale-x-[-1]"
         />
       </div>
     );

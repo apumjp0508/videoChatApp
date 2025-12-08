@@ -2,6 +2,8 @@ import { sendOffer, sendIce, sendAnswer } from "../websocket/signaling";
 import { getLocalStream } from "./getMedia";
 import { mapToConnState, setConnState } from "../../utils/mapper/ConnStateMapper";
 import { useChatRoomStore } from "../../types/chatRoomStore";
+import { useNetworkStore } from "../../types/networkStore";
+import { monitorNetworkQuality, stopMonitorNetworkQuality } from "./stats/monitorNetworkQuality";
 
 export async function startCall(
   ws: WebSocket,
@@ -40,6 +42,9 @@ export async function startCall(
     setConnState(mapToConnState(pc.connectionState));
     const connected = pc.connectionState === "connected";
     useChatRoomStore.getState().setConnected(Boolean(connected));
+    if (!connected) {
+      stopMonitorNetworkQuality(toUserId);
+    }
   };
 
   const offer = await pc.createOffer();
@@ -61,8 +66,14 @@ export async function acceptCall(
 
   const localStream = await getLocalStream();
   // ChatRoom反映
+  useChatRoomStore.getState().setId(fromUserId);
   useChatRoomStore.getState().setLocalStream(localStream);
   useChatRoomStore.getState().setPeerConnection(pc);
+  // NetworkState反映
+  useNetworkStore.getState().ensure(fromUserId);
+  useNetworkStore.getState().setPeerConnection(fromUserId, pc);
+  useNetworkStore.getState().setStreams(fromUserId, localStream, null);
+  monitorNetworkQuality(fromUserId, pc);
 
   if (localStream) {
     for (const track of localStream.getTracks()) {
@@ -88,15 +99,20 @@ export async function acceptCall(
     setConnState(mapToConnState(pc.connectionState));
     const connected = pc.connectionState === "connected";
     useChatRoomStore.getState().setConnected(Boolean(connected));
+    if (!connected) {
+      stopMonitorNetworkQuality(fromUserId);
+    }
   };
   // 受信トラックの反映
   pc.ontrack = (ev: RTCTrackEvent) => {
     const streams = ev.streams;
     if (streams && streams[0]) {
       useChatRoomStore.getState().setRemoteStream(streams[0]);
+      useNetworkStore.getState().setStreams(fromUserId, localStream, streams[0]);
     } else if (ev.track) {
       const remote = new MediaStream([ev.track]);
       useChatRoomStore.getState().setRemoteStream(remote);
+      useNetworkStore.getState().setStreams(fromUserId, localStream, remote);
     }
   };
 
