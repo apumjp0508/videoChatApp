@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { useVideoChatUI } from "../../hook/useVideoChatUI";
+import { useVideoChatUI } from "../../component/useVideoChatUI";
 
 export default function ChatRoom() {
   const { isConnected, VideoChatView } = useVideoChatUI();

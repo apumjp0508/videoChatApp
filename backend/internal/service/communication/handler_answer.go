@@ -2,7 +2,6 @@ package signaling
 
 import (
 	comm "akichat/backend/internal/communication"
-	"fmt"
 )
 type answerHandler struct{ rt comm.Gateway }
 

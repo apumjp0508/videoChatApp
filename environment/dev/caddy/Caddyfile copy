@@ -14,4 +14,3 @@
         reverse_proxy realtime_backend:8080
     }
 }
-

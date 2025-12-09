@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef } from "react";
 import { useChatRoomStore } from "../types/chatRoomStore";
-import { useDynamicVideoQuality } from "./useDynamicVideoQuality";
+import { useDynamicVideoQuality } from "../hook/useDynamicVideoQuality";
 
 export function useVideoChatUI() {
   const session = useChatRoomStore((s) => s.session);
