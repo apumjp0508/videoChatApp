@@ -3,6 +3,7 @@ import { FriendRequestHandler } from "./handlers/friendRequest";
 import { OfferHandler } from "./handlers/OfferHandler";
 import { AnswerHandler } from "./handlers/AnswerHandler";
 import { IceHandler } from "./handlers/IceHandler";
+import { TranscriptHandler } from "./handlers/TranscriptHandler";
 import type { NotificationRouter } from "./interfaces";
 
 class NotificationContainer {
@@ -16,6 +17,8 @@ class NotificationContainer {
       new OfferHandler(),
       new AnswerHandler(),
       new IceHandler(),
+      // streaming transcript
+      new TranscriptHandler(),
     ];
     this.router = createNotificationRouter(handlers);
   }

@@ -1,12 +1,14 @@
 package websocket
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 	"github.com/gin-contrib/sessions"
 	signaling "akichat/backend/internal/service/communication"
+	"akichat/backend/internal/service/modelinfo"
 	wsclient "akichat/backend/internal/communication/websocket"
 )
 
@@ -18,12 +20,14 @@ var upgrader = websocket.Upgrader{
 type WSHandler struct {
 	Hub       *wsclient.Hub
 	Signaling *signaling.Service
+	ModelInfo modelinfo.Sender
 }
 
-func NewWSHandler(hub *wsclient.Hub, sig *signaling.Service) *WSHandler {
+func NewWSHandler(hub *wsclient.Hub, sig *signaling.Service, mi modelinfo.Sender) *WSHandler {
 	return &WSHandler{
 		Hub:       hub,
 		Signaling: sig,
+		ModelInfo: mi,
 	}
 }
 
@@ -57,6 +61,10 @@ func (h *WSHandler) Handle(c *gin.Context) {
     client := wsclient.NewClient(userID, conn, sigSvc.Handle)
     // 登録
     h.Hub.Register(client)
+    // モデル情報を非同期で送信（Gateway経由、登録競合に備えてリトライはサービス側で実施）
+    go func(uid uint) {
+        _ = h.ModelInfo.SendToUser(context.Background(), uid)
+    }(userID)
     // 開始
     client.Start()
 }
