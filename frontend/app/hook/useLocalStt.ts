@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createAudioCapture } from "../services/audio/capture";
+import { defaultAudioWorkletModuleLoader } from "../services/audio/workletLoader";
 import { localTranscriber } from "../services/stt/service";
 import { useChatRoomStore } from "../types/chatRoomStore";
 
@@ -30,33 +31,54 @@ export function useLocalStt({
   const lastEmitRef = useRef<number>(0);
 
   const start = useCallback(async () => {
+    if (!enabled) return;
+    if (isRunning) {
+      console.warn("[useLocalStt] already running, skip start()");
+      return;
+    }
+
     setError(null);
-    if (!enabled || isRunning) return;
+    setIsRunning(true); // ✅ 先に立てることで多重起動防止
+
     try {
+
       const stream = session.localStream;
       if (!stream) {
         setError("localStream が利用できません。接続を確認してください。");
+        console.warn("[useLocalStt] localStream not available.");
+        setIsRunning(false);
         return;
       }
-      if (!captureRef.current) captureRef.current = createAudioCapture();
+      if (!captureRef.current) {
+        captureRef.current = createAudioCapture(defaultAudioWorkletModuleLoader); // Safariでも再利用される
+      }
+
       await captureRef.current.start(stream, {
         targetSampleRate: sampleRate,
+        //onframeは音声データの処理方法を定義する
         onFrame: (pcm, rate) => {
-          const now = (typeof performance !== "undefined" && performance.now) ? performance.now() : Date.now();
+          const now =
+            typeof performance !== "undefined" && performance.now
+              ? performance.now()
+              : Date.now();
           if (now - lastEmitRef.current < debounceMs) return;
           lastEmitRef.current = now;
           localTranscriber.pushPcmFrame(pcm, rate);
         },
       });
-      setIsRunning(true);
+
     } catch (e) {
       setError((e as Error)?.message ?? "unknown error");
+      console.error("[useLocalStt] start error:", e);
+      setIsRunning(false);
     }
-  }, [enabled, isRunning, session.localStream, sampleRate]);
+  }, [enabled, isRunning, session.localStream, sampleRate, debounceMs]);
 
   const stop = useCallback(() => {
     try {
       captureRef.current?.stop();
+    } catch (e) {
+      console.warn("[useLocalStt] stop error:", e);
     } finally {
       setIsRunning(false);
     }
@@ -67,12 +89,10 @@ export function useLocalStt({
       try {
         captureRef.current?.stop();
       } catch {
-        // ignore
+        /* ignore */
       }
     };
   }, []);
 
   return { start, stop, isRunning, error };
 }
-
-

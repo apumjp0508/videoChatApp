@@ -81,7 +81,7 @@ func SetupRouter() *gin.Engine {
     wsGroup := r.Group("/api/session")
     wsGroup.Use(middleware.SessionMiddleware())
     // DI版のWebSocketHandlerを使用
-	wsH := wsHandler.NewWSHandler(container.Hub, container.SignalingService, container.ModelInfoSender)
+	wsH := wsHandler.NewWSHandler(container.Hub, container.SignalingService)
     wsGroup.GET("/websocket", wsH.Handle)
 
 	fmt.Println("websocket通信を開始")

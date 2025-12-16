@@ -1,5 +1,6 @@
 import type { LocalModelMeta, LocalTranscriber, TranscribeHandlers } from "./interface";
 import { useTranscriptStore } from "../../types/transcriptStore";
+import { loadSttEngine } from "./loadModel";
 
 class LocalTranscriberService implements LocalTranscriber {
   private model: LocalModelMeta | null = null;
@@ -16,13 +17,29 @@ class LocalTranscriberService implements LocalTranscriber {
     if (!this.worker) {
       this.worker = new Worker(new URL("./worker.ts", import.meta.url), { type: "module" });
       this.worker.onmessage = (e: MessageEvent) => {
-        const msg = (e.data || {}) as { type: string; sequence: number; text: string };
+        const msg = (e.data || {}) as { type: string; sequence?: number; text?: string };
         if (msg.type === "partial") {
           this.emitPartial(Number(msg.sequence || 0), String(msg.text || ""));
         } else if (msg.type === "final") {
           this.emitFinal(Number(msg.sequence || 0), String(msg.text || ""));
         }
       };
+    }
+    // エンジンロード（adapter.js 経由の module 固定）
+    const url = meta.url;
+    try {
+      await loadSttEngine(this.worker, {
+        type: "module",
+        url,
+        version: meta.version,
+        config: undefined,
+        timeoutMs: 15000,
+      });
+      // eslint-disable-next-line no-console
+      console.log("[LocalTranscriber] engine loaded:", url);
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.warn("[LocalTranscriber] engine load failed. fallback to stub:", e);
     }
   }
 
@@ -44,6 +61,8 @@ class LocalTranscriberService implements LocalTranscriber {
     const sequence = ++this.seq;
     // 転送コスト削減のため ArrayBuffer を移譲
     // NOTE: このframeは以後参照しないこと
+    // eslint-disable-next-line no-console
+    console.log("[LocalTranscriber] post pcm to worker seq=", sequence, "len=", frame.length, "sr=", sampleRate);
     this.worker.postMessage(
       {
         type: "pcm",

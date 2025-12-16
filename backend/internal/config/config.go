@@ -24,9 +24,6 @@ type Config struct {
     SessionSameSite http.SameSite
     SessionMaxAge   int
     SessionSecretKey string
-	WhisperAPIKey   string
-    WhisperModelURL     string
-    WhisperModelVersion string
 }
 
 func Load() *Config {
@@ -63,9 +60,6 @@ func Load() *Config {
         SessionSameSite: sameSite,
         SessionMaxAge:   maxAge,
         SessionSecretKey: getEnv("SESSION_SECRET_KEY", "default-fallback-key"),
-		WhisperAPIKey:   getEnv("OPENAI_API_KEY", ""),
-        WhisperModelURL: getEnv("WHISPER_MODEL_URL", "https://api.openai.com/v1/audio/transcriptions"),
-        WhisperModelVersion: getEnv("WHISPER_MODEL_VERSION", "whisper-1"),
 
     }
     if cfg.Port == "" {

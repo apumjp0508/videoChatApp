@@ -4,6 +4,13 @@ export type TranscribeHandlers = {
   onError?: (message: string) => void;
 };
 
+export interface ISttEngine {
+  transcribe(
+    frame: Int16Array,
+    sampleRate: number
+  ): Promise<{ partial?: string; final?: string }>;
+}
+
 export type LocalModelMeta = {
   url: string;
   version: string;

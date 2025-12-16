@@ -18,50 +18,60 @@ export function useVideoChatUI() {
     enabled: true,
     sampleRate: 16000,
   });
+  const sttStartedRef = useRef(false);
 
+  // 🎥 ビデオストリームの反映
   useEffect(() => {
     if (localRef.current && localStream) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (localRef.current as any).srcObject = localStream;
     }
   }, [localStream]);
 
   useEffect(() => {
     if (remoteRef.current && remoteStream) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (remoteRef.current as any).srcObject = remoteStream;
     }
   }, [remoteStream]);
 
-  // 動的クオリティ制御（peerIdが未設定の場合は無効値で呼び、内部で無視される）
+  // 🎚 動的クオリティ制御
   useDynamicVideoQuality({
     peerId: Number(session.id ?? -1),
     pc: session.peerConnection,
   });
 
-  // 接続状態とローカルストリームに応じてローカルSTTの開始/停止を制御
+  // 🎙 ローカルSTT制御（StrictMode/依存ループ回避）
   useEffect(() => {
-    if (isConnected && localStream && !sttRunning) {
-      sttStart().catch(() => {});
-    }
-    if (!isConnected && sttRunning) {
+    if (isConnected && localStream && !sttStartedRef.current) {
+      sttStartedRef.current = true;
+      sttStart().catch((err) => {
+        // eslint-disable-next-line no-console
+        console.error("[useVideoChatUI] sttStart failed", err);
+      });
+    } else if ((!isConnected || !localStream) && sttStartedRef.current) {
       try {
         sttStop();
-      } catch {}
+      } catch (err) {
+        // eslint-disable-next-line no-console
+        console.warn("[useVideoChatUI] sttStop failed", err);
+      }
+      sttStartedRef.current = false;
     }
     return () => {
       try {
         sttStop();
       } catch {}
+      sttStartedRef.current = false;
     };
-  }, [isConnected, localStream, sttRunning, sttStart, sttStop]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isConnected, localStream]);
 
+  // 🪞 UI
   const VideoChatView = useMemo(() => {
     if (!isConnected) return null;
     return (
       <div className="fixed inset-0">
         <div className="w-full h-full flex">
-          {/* Left: Transcript panel (1/3 width) */}
+          {/* Transcript panel */}
           <aside className="hidden md:flex md:w-1/3 h-full flex-col bg-black/40 backdrop-blur-sm">
             <div className="px-4 py-3 border-b border-white/10">
               <span className="text-white/90 font-medium text-sm">Transcript</span>
@@ -87,7 +97,7 @@ export function useVideoChatUI() {
             </div>
           </aside>
 
-          {/* Mobile Transcript overlay (bottom) */}
+          {/* Mobile transcript */}
           <div className="md:hidden absolute inset-x-0 bottom-0 z-10 max-h-[45%] bg-black/70 backdrop-blur-sm text-white">
             <div className="px-4 py-2 border-b border-white/10 text-xs font-medium text-white/90">
               Transcript
@@ -97,7 +107,9 @@ export function useVideoChatUI() {
                 <div
                   key={`mseg-${seg.sequence}`}
                   className={`max-w-[95%] rounded-lg px-3 py-2 text-sm leading-relaxed ${
-                    seg.isFinal ? "bg-white/90 text-gray-900" : "bg-white/70 text-gray-900"
+                    seg.isFinal
+                      ? "bg-white/90 text-gray-900"
+                      : "bg-white/70 text-gray-900"
                   }`}
                 >
                   {seg.text}
@@ -111,7 +123,7 @@ export function useVideoChatUI() {
             </div>
           </div>
 
-          {/* Right: Video area (2/3 width) */}
+          {/* Video area */}
           <main className="flex-1 relative bg-black">
             <video
               ref={remoteRef}
@@ -132,12 +144,5 @@ export function useVideoChatUI() {
     );
   }, [isConnected, segments, transcript]);
 
-  return {
-    isConnected,
-    VideoChatView,
-    localStream,
-    remoteStream,
-  };
+  return { isConnected, VideoChatView, localStream, remoteStream };
 }
-
-
