@@ -11,6 +11,7 @@ export type AudioCapture = {
 
 import { downmixToMono, floatToInt16, downsample } from "../../utils/audio/signal";
 import { AudioWorkletModuleLoader, defaultAudioWorkletModuleLoader } from "./workletLoader";
+import { isSpeechFrame } from "../../utils/audio/vad";
 
 // --- Main capture implementation (AudioWorklet only) ---
 
@@ -88,6 +89,12 @@ export function createAudioCapture(
       const mono = downmixToMono(right ? [left, right] : [left], frameSize);
       const ds = downsample(mono, msg.sampleRate, targetRate);
       const i16 = floatToInt16(ds);
+
+      if (i16.length < 160) {
+        return;
+      }
+
+      if (!isSpeechFrame(i16, { threshold: 500, minLength: 160 })) return;
       opts.onFrame(i16, targetRate);
     };
 

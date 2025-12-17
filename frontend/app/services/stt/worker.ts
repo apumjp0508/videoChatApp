@@ -4,9 +4,14 @@
 // 将来的に wasmSttEngine.transcribe(frame, sampleRate) に置き換える
 
 import type { ISttEngine } from "./interface";
+import { PcmBufferAggregator } from "./pcmBuffer";
 
 // eslint-disable-next-line no-restricted-globals
 const ctx: DedicatedWorkerGlobalScope = self as any;
+
+// Whisper 呼び出し用のPCMバッファ集約（短小フレームをまとめる）
+let pcmAgg = new PcmBufferAggregator(16000, 1.0, 2.0);
+let currentSampleRate = 16000;
 
 let bufferedSamples = 0;
 let hasEmittedPartialInWindow = false;
@@ -53,8 +58,21 @@ ctx.onmessage = async (e: MessageEvent) => {
   // STT エンジンによる推論を実行（存在しない場合は安全にフォールバック）
   const engine = engineRef;
   if (engine && typeof engine.transcribe === "function") {
+    // 受信サンプルレートの変化に追従
+    if (sampleRate !== currentSampleRate) {
+      // eslint-disable-next-line no-console
+      console.log("[stt worker] reinit aggregator for sampleRate:", sampleRate);
+      currentSampleRate = sampleRate;
+      pcmAgg = new PcmBufferAggregator(sampleRate, 1.0, 2.0);
+    }
+    // 短小フレームをバッファしてから一定長でまとめて推論を実行
+    pcmAgg.pushFrame(frame);
+    const merged = pcmAgg.maybeBuildChunk();
+    if (!merged) return;
+
+    // ここで初めて Whisper を実行
     try {
-      const result = await engine.transcribe(frame, sampleRate);
+      const result = await engine.transcribe(merged, pcmAgg.sampleRate);
       // eslint-disable-next-line no-console
       console.log("[stt worker] engine result:", result);
       if (result?.partial) {
