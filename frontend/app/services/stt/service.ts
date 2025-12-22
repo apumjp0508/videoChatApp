@@ -1,5 +1,5 @@
 import type { LocalModelMeta, LocalTranscriber, TranscribeHandlers } from "./interface";
-import { useTranscriptStore } from "../../types/transcriptStore";
+import { useTranscriptStore } from "../../types/audio/transcriptStore";
 import { loadSttEngine } from "./loadModel";
 
 class LocalTranscriberService implements LocalTranscriber {
@@ -18,6 +18,8 @@ class LocalTranscriberService implements LocalTranscriber {
       this.worker = new Worker(new URL("./worker.ts", import.meta.url), { type: "module" });
       this.worker.onmessage = (e: MessageEvent) => {
         const msg = (e.data || {}) as { type: string; sequence?: number; text?: string };
+        // eslint-disable-next-line no-console
+        console.log("[LocalTranscriber] worker.onmessage:", msg?.type, "seq=", msg?.sequence, "text=", msg?.text);
         if (msg.type === "partial") {
           this.emitPartial(Number(msg.sequence || 0), String(msg.text || ""));
         } else if (msg.type === "final") {

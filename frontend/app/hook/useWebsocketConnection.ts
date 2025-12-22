@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { useUserStore } from "../types/userStore";
-import { useWebSocketStore } from "../types/websocketStore";
+import { useWebSocketStore } from "../types/network/websocketStore";
 import { WS_BASE } from "../utils/apiBase";
 import { initWebSocketSession } from "../services/websocket/initWebSocketSession";
 

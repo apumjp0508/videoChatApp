@@ -1,6 +1,6 @@
 "use client";
 
-import { useWebSocketStore } from "../types/websocketStore";
+import { useWebSocketStore } from "../types/network/websocketStore";
 import { useEffect } from "react";
 import { notificationContainer } from "../services/notifications/container";
 import { attachEndpointHandlers } from "../services/signaling/endpoint";

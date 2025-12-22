@@ -1,8 +1,8 @@
 "use client";
 
 import { useUserStore } from "../../types/userStore";
-import { useNotificationStore } from "../../types/notificationStore";
-import { useCallOfferStore } from "../../types/callOfferStore";
+import { useNotificationStore } from "../../types/communication/notificationStore";
+import { useCallOfferStore } from "../../types/VideooChat/callOfferStore";
 import { acceptFriendRequest, acceptCallRequest, declineCallRequest } from "../../services/signaling/globalActions";
 import IncomingCallToast from "./incomingCallToast";
 import { useMemo } from "react";

@@ -1,9 +1,9 @@
 import { startCall } from "./startChatOffer";
-import { ConnState } from "../../types/callSession";
+import { ConnState } from "../../types/VideooChat/callSession";
 import { mapToConnState, setConnState, subscribeConnState, getConnState } from "../../utils/mapper/ConnStateMapper";
 import { getLocalStream } from "./getMedia";
-import { useChatRoomStore } from "../../types/chatRoomStore";
-import { useNetworkStore } from "../../types/networkStore";
+import { useChatRoomStore } from "../../types/VideooChat/chatRoomStore";
+import { useNetworkStore } from "../../types/network/networkStore";
 import { monitorNetworkQuality, stopMonitorNetworkQuality } from "./stats/monitorNetworkQuality";
 let currentPc: RTCPeerConnection | null = null;
 let currentPeerUserId: number | null = null;

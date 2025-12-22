@@ -13,7 +13,6 @@ import (
 func RefreshHandler(c *gin.Context) {
 
     refreshToken, err := c.Cookie("refreshToken")
-    fmt.Println("Refreshing token with refresh token:", refreshToken)
     if err != nil {
         fmt.Println("refresh token not provided")
         c.JSON(http.StatusUnauthorized, gin.H{"error": "refresh token not provided"})

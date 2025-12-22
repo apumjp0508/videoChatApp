@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { useNetworkStore } from "../types/networkStore";
+import { useNetworkStore } from "../types/network/networkStore";
 
 type Props = {
   peerId: number;

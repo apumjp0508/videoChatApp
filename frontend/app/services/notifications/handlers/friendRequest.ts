@@ -1,5 +1,5 @@
-import { useNotificationStore } from "../../../types/notificationStore";
-import type { MessageType } from "../../../types/notification";
+import { useNotificationStore } from "../../../types/communication/notificationStore";
+import type { MessageType } from "../../../types/communication/notification";
 import type { AppMessage, NotificationHandler } from "../interfaces";
 
 export class FriendRequestHandler implements NotificationHandler {

@@ -1,5 +1,5 @@
 import type { NotificationHandler, AppMessage } from "../interfaces";
-import { useCallOfferStore } from "../../../types/callOfferStore";
+import { useCallOfferStore } from "../../../types/VideooChat/callOfferStore";
 
 export class OfferHandler implements NotificationHandler {
   canHandle(msg: AppMessage): boolean {

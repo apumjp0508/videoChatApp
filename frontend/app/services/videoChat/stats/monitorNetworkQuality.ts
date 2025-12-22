@@ -1,4 +1,4 @@
-import { useNetworkStore } from "../../../types/networkStore";
+import { useNetworkStore } from "../../../types/network/networkStore";
 import { collectRtpStats } from "./collectStats";
 import { deriveQualityLevel } from "./quality";
 

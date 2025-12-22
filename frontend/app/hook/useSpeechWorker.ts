@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useChatRoomStore } from "../types/chatRoomStore";
+import { useChatRoomStore } from "../types/VideooChat/chatRoomStore";
 import type { UseSpeechWorkerOptions, UseSpeechWorkerReturn } from "../types/speechWorker";
 
 export function useSpeechWorker({

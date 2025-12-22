@@ -1,10 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { createAudioCapture } from "../services/audio/capture";
-import { defaultAudioWorkletModuleLoader } from "../services/audio/workletLoader";
-import { localTranscriber } from "../services/stt/service";
-import { useChatRoomStore } from "../types/chatRoomStore";
+import { createAudioCapture } from "../../services/audio/capture";
+import { defaultAudioWorkletModuleLoader } from "../../services/audio/workletLoader";
+import { localTranscriber } from "../../services/stt/service";
+import { useChatRoomStore } from "../../types/VideooChat/chatRoomStore";
 
 type UseLocalSttOptions = {
   enabled?: boolean; // デフォルト true
@@ -57,6 +57,7 @@ export function useLocalStt({
         targetSampleRate: sampleRate,
         //onframeは音声データの処理方法を定義する
         onFrame: (pcm, rate) => {
+          console.log("[useLocalStt] onFrame");
           const now =
             typeof performance !== "undefined" && performance.now
               ? performance.now()

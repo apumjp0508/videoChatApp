@@ -1,4 +1,4 @@
-import type { QualityLevel } from "../../../types/network";
+import type { QualityLevel } from "../../../types/network/network";
 
 export function deriveQualityLevel(params: {
 	bitrateKbps: number | null | undefined;

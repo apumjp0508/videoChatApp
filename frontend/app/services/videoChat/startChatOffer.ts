@@ -1,8 +1,8 @@
 import { sendOffer, sendIce, sendAnswer } from "../websocket/signaling";
 import { getLocalStream } from "./getMedia";
 import { mapToConnState, setConnState } from "../../utils/mapper/ConnStateMapper";
-import { useChatRoomStore } from "../../types/chatRoomStore";
-import { useNetworkStore } from "../../types/networkStore";
+import { useChatRoomStore } from "../../types/VideooChat/chatRoomStore";
+import { useNetworkStore } from "../../types/network/networkStore";
 import { monitorNetworkQuality, stopMonitorNetworkQuality } from "./stats/monitorNetworkQuality";
 
 export async function startCall(

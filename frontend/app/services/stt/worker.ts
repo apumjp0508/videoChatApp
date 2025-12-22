@@ -22,6 +22,9 @@ ctx.onmessage = async (e: MessageEvent) => {
     | { type: "pcm"; frame: ArrayBuffer | Int16Array; sampleRate: number; sequence: number }
     | { type: "load-engine-url"; url: string; version?: string; config?: unknown }
 
+    // eslint-disable-next-line no-console
+    console.log("[stt worker] onmessage type=", (msg as any)?.type);
+
     if (msg.type === "load-engine-url") {
       try {
         const mod: any = await import(/* webpackIgnore: true */ msg.url);
@@ -52,8 +55,13 @@ ctx.onmessage = async (e: MessageEvent) => {
   } else if (msg.frame instanceof ArrayBuffer) {
     frame = new Int16Array(msg.frame);
   } else {
+    // eslint-disable-next-line no-console
+    console.warn("[stt worker] invalid frame. skip.");
     return;
   }
+
+  // eslint-disable-next-line no-console
+  console.log("[stt worker] recv pcm seq=", sequence, "len=", frame.length, "sr=", sampleRate);
 
   // STT エンジンによる推論を実行（存在しない場合は安全にフォールバック）
   const engine = engineRef;
@@ -67,11 +75,19 @@ ctx.onmessage = async (e: MessageEvent) => {
     }
     // 短小フレームをバッファしてから一定長でまとめて推論を実行
     pcmAgg.pushFrame(frame);
+    // eslint-disable-next-line no-console
+    console.log("[stt worker] pushed frame. try build chunk...");
     const merged = pcmAgg.maybeBuildChunk();
-    if (!merged) return;
+    if (!merged) {
+      // eslint-disable-next-line no-console
+      console.log("[stt worker] waiting for MIN_SECONDS worth of audio...");
+      return;
+    }
 
     // ここで初めて Whisper を実行
     try {
+      // eslint-disable-next-line no-console
+      console.log("[stt worker] calling engine.transcribe: samples=", merged.length, "sr=", pcmAgg.sampleRate);
       const result = await engine.transcribe(merged, pcmAgg.sampleRate);
       // eslint-disable-next-line no-console
       console.log("[stt worker] engine result:", result);

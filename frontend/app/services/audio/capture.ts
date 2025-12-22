@@ -11,7 +11,8 @@ export type AudioCapture = {
 
 import { downmixToMono, floatToInt16, downsample } from "../../utils/audio/signal";
 import { AudioWorkletModuleLoader, defaultAudioWorkletModuleLoader } from "./workletLoader";
-import { isSpeechFrame } from "../../utils/audio/vad";
+import { FloatFrameAccumulator } from "./FrameAccumulator";
+import { HangoverVad } from "./hangover";
 
 // --- Main capture implementation (AudioWorklet only) ---
 
@@ -23,6 +24,8 @@ export function createAudioCapture(
   let source: MediaStreamAudioSourceNode | null = null;
   let workletNode: AudioWorkletNode | null = null;
   let running = false;
+  let vadAccumulator: FloatFrameAccumulator | null = null;
+  let hangoverVad: HangoverVad | null = null;
 
   async function start(stream: MediaStream, opts: CaptureOptions): Promise<void> {
     if (running) {
@@ -31,11 +34,11 @@ export function createAudioCapture(
     }
     running = true;
     const targetRate = opts.targetSampleRate ?? 16000;
+    vadAccumulator = new FloatFrameAccumulator(160); // 10ms @ 16kHz
+    hangoverVad = new HangoverVad(0.01, 160, 10);
 
     if (!sharedCtx || sharedCtx.state === "closed") {
       sharedCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
-      // eslint-disable-next-line no-console
-      console.log("[capture] AudioContext created. sampleRate=", sharedCtx.sampleRate);
     }
     const ctx = sharedCtx;
 
@@ -51,8 +54,6 @@ export function createAudioCapture(
     if (ctx.state === "suspended") {
       try {
         await ctx.resume();
-        // eslint-disable-next-line no-console
-        console.log("[capture] AudioContext resumed. state=", ctx.state);
       } catch (e) {
         // eslint-disable-next-line no-console
         console.error("[capture] Failed to resume AudioContext:", e);
@@ -65,8 +66,7 @@ export function createAudioCapture(
     // AudioWorklet モジュールをロード（DIローダへ委譲）
     try {
       await loader.load(ctx, workletUrl);
-      // eslint-disable-next-line no-console
-      console.log("[capture] AudioWorklet module ensured ✅", workletUrl);
+      console.log("[capture] AudioWorklet module ensured ✅");
     } catch (e) {
       // eslint-disable-next-line no-console
       console.error("[capture] Failed to ensure AudioWorklet module:", e);
@@ -88,21 +88,26 @@ export function createAudioCapture(
       const frameSize = left.length;
       const mono = downmixToMono(right ? [left, right] : [left], frameSize);
       const ds = downsample(mono, msg.sampleRate, targetRate);
-      const i16 = floatToInt16(ds);
-
-      if (i16.length < 160) {
+      // フロートPCMをまず蓄積してから VAD（Hangover 付き）にかける
+      const merged = vadAccumulator?.push(ds) ?? null;
+      if (!merged){
+        console.log("[capture] no merged");
         return;
       }
-
-      if (!isSpeechFrame(i16, { threshold: 500, minLength: 160 })) return;
+      const active = hangoverVad?.process(merged) ?? false;
+      if (!active){
+        console.log("[capture] no active");
+        return;
+      }
+      console.log("[capture] active");
+      // 発話中のみ STT に流す（Int16 へ変換）
+      const i16 = floatToInt16(merged);
       opts.onFrame(i16, targetRate);
     };
 
     // 音声ストリームを Worklet に接続
     source.connect(workletNode);
     workletNode.connect(ctx.destination);
-    // eslint-disable-next-line no-console
-    console.log("[capture] Connected graph: source -> workletNode -> destination");
   }
 
   function stop(): void {
@@ -116,6 +121,10 @@ export function createAudioCapture(
     workletNode = null;
     source = null;
     running = false;
+    try { vadAccumulator?.reset(); } catch {}
+    try { hangoverVad?.reset(); } catch {}
+    vadAccumulator = null;
+    hangoverVad = null;
     // sharedCtx は再利用のため閉じない
     // eslint-disable-next-line no-console
     console.log("[capture] stopped");

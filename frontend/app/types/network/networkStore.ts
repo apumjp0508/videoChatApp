@@ -1,7 +1,7 @@
 "use client";
 
 import { create } from "zustand";
-import type { NetworkState, QualityLevel } from "./network";
+import type { NetworkState, QualityLevel } from "./network/network";
 
 type NetworkStoreState = {
 	byPeerId: Map<number, NetworkState>;

@@ -1,5 +1,5 @@
 // src/utils/rtcStateMapper.ts
-import { ConnState } from "../../types/callSession";
+import { ConnState } from "../../types/VideooChat/callSession";
 
 export function mapToConnState(state: RTCPeerConnectionState | "none"): ConnState {
   switch (state) {
@@ -16,7 +16,7 @@ export function mapToConnState(state: RTCPeerConnectionState | "none"): ConnStat
     case "closed":
       return ConnState.Closed;
     default:
-      return ConnState.None;
+      return ConnState.None;  
   }
 }
 

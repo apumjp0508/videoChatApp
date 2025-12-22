@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useRef } from "react";
-import { useChatRoomStore } from "../types/chatRoomStore";
+import { useChatRoomStore } from "../types/VideooChat/chatRoomStore";
 import { useDynamicVideoQuality } from "../hook/useDynamicVideoQuality";
-import { useTranscriptStore } from "../types/transcriptStore";
-import { useLocalStt } from "../hook/useLocalStt";
+import { useTranscriptStore } from "../types/audio/transcriptStore";
+import { useLocalStt } from "../hook/audio/useLocalStt";
 
 export function useVideoChatUI() {
   const session = useChatRoomStore((s) => s.session);

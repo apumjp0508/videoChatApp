@@ -2,8 +2,8 @@
 
 import { API_BASE } from "../../utils/apiBase";
 import { postWithAuth } from "../../utils/postWithAuth";
-import { useWebSocketStore } from "../../types/websocketStore";
-import { useCallOfferStore } from "../../types/callOfferStore";
+import { useWebSocketStore } from "../../types/network/websocketStore";
+import { useCallOfferStore } from "../../types/VideooChat/callOfferStore";
 import { acceptCall } from "../videoChat/startChatOffer";
 
 export async function acceptFriendRequest(requestUserID: number, userID: number) {

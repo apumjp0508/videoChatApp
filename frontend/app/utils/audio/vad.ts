@@ -10,7 +10,7 @@ export function isSpeechFrame(
     minLength?: number;   // 最小サンプル数
   }
 ): boolean {
-  const threshold = options?.threshold ?? 500;
+  const threshold = options?.threshold ?? 0.01;
   const minLength = options?.minLength ?? 160; // 10ms @16kHz
 
   if (pcm.length < minLength) {

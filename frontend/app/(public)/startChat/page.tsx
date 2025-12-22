@@ -8,8 +8,8 @@ import { useRouter } from "next/navigation";
 import { useUserStore } from "../../types/userStore";
 import Notification from "../../component/home/approveNotification";
 import { startOutgoingCall, subscribeConnectionState } from "../../services/videoChat/callSession";
-import { ConnState } from "../../types/callSession";
-import { useWebSocketStore } from "../../types/websocketStore";
+import { ConnState } from "../../types/VideooChat/callSession";
+import { useWebSocketStore } from "../../types/network/websocketStore";
 
 export default function ChatStartButton() {
     type Friend = { ID: number; username: string; isOnline?: boolean };
